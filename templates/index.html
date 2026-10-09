@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RailFlow — Train Seat Booking System (Python Data Structures)</title>
+  <meta name="description" content="Academic demonstration of Python List, collections.deque FIFO Queue, Linear Searching, and Automatic Promotion.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">🚆</div>
+      <div class="brand-text">
+        <h1>RailFlow</h1>
+        <span>Train Seat Booking System · Python Data Structures Engine</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn-cancel-id" id="openCancelModalBtn" title="Cancel booking by Passenger ID">
+        🔍 Cancel by ID
+      </button>
+      <button type="button" class="btn-reset" id="resetBtn" title="Reset system state">
+        ↻ Reset System
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Hero / Train Route Banner -->
+    <section class="hero-card">
+      <div class="hero-content">
+        <span class="hero-eyebrow">M.Sc. DATA SCIENCE DEMONSTRATION · PYTHON ENGINE</span>
+        <h2 class="route-title">Chennai <span class="arrow">⇄</span> Bangalore</h2>
+        <p class="route-sub">
+          Express Service · <strong>10 Total Seats</strong> · First-In, First-Out (FIFO) Waiting Queue Promotion
+        </p>
+      </div>
+      <div class="hero-badge-group">
+        <div class="badge-item">
+          <span class="badge-label">TOTAL CAPACITY</span>
+          <strong class="badge-value">10 Seats</strong>
+        </div>
+        <div class="badge-item">
+          <span class="badge-label">QUEUE ENGINE</span>
+          <strong class="badge-value">collections.deque</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- Notification / Alert Banner -->
+    <div id="alertBanner" class="alert-banner hidden" role="alert" aria-live="polite">
+      <div class="alert-icon" id="alertIcon">ℹ</div>
+      <div class="alert-message" id="alertText">Notification message</div>
+      <button type="button" class="alert-close" id="alertCloseBtn" aria-label="Close message">×</button>
+    </div>
+
+    <!-- Live Train Statistics Cards (Section 3) -->
+    <section class="stats-grid">
+      <div class="stat-card total-card">
+        <div class="stat-meta">
+          <span class="stat-label">Total Train Capacity</span>
+          <span class="stat-sub">Fixed route capacity</span>
+        </div>
+        <div class="stat-num-wrap">
+          <strong class="stat-number" id="statTotal">10</strong>
+          <span class="stat-unit">Seats</span>
+        </div>
+      </div>
+
+      <div class="stat-card available-card">
+        <div class="stat-meta">
+          <span class="stat-label">Available Seats</span>
+          <span class="stat-sub">Ready for allocation</span>
+        </div>
+        <div class="stat-num-wrap">
+          <strong class="stat-number text-green" id="statAvailable">10</strong>
+          <span class="stat-unit">of 10</span>
+        </div>
+      </div>
+
+      <div class="stat-card confirmed-card">
+        <div class="stat-meta">
+          <span class="stat-label">Confirmed Passengers</span>
+          <span class="stat-sub">Assigned seats 1–10</span>
+        </div>
+        <div class="stat-num-wrap">
+          <strong class="stat-number text-blue" id="statConfirmed">0</strong>
+          <span class="stat-unit">Booked</span>
+        </div>
+      </div>
+
+      <div class="stat-card queue-card">
+        <div class="stat-meta">
+          <span class="stat-label">FIFO Waiting Queue</span>
+          <span class="stat-sub">Awaiting cancellation</span>
+        </div>
+        <div class="stat-num-wrap">
+          <strong class="stat-number text-amber" id="statWaiting">0</strong>
+          <span class="stat-unit">Waiting</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Workspace: Booking Form + 10-Seat Visual Layout -->
+    <div class="main-split">
+
+      <!-- Passenger Booking Form (Section 4) -->
+      <section class="card panel-booking">
+        <div class="card-header">
+          <div>
+            <h3>Passenger Booking</h3>
+            <p>New reservation will be assigned automatically</p>
+          </div>
+          <div class="next-id-pill" id="nextIdPill" title="Next auto-generated Passenger ID">
+            Next: <strong id="nextIdDisplay">P001</strong>
+          </div>
+        </div>
+
+        <form id="bookingForm" class="booking-form" novalidate>
+          <div class="form-group">
+            <label for="passengerName">Passenger Name <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="passengerName" 
+              name="passengerName"
+              placeholder="e.g. Ramesh Sharma" 
+              maxlength="40" 
+              required
+              autocomplete="name"
+            >
+            <span class="form-hint">Alphabetic name (2–40 characters)</span>
+          </div>
+
+          <div class="form-group">
+            <label for="passengerAge">Passenger Age <span class="required">*</span></label>
+            <input 
+              type="number" 
+              id="passengerAge" 
+              name="passengerAge"
+              placeholder="e.g. 28" 
+              min="1" 
+              max="120" 
+              required
+            >
+            <span class="form-hint">Valid age between 1 and 120</span>
+          </div>
+
+          <button type="submit" class="btn-primary" id="bookSubmitBtn">
+            <span>Confirm & Allocate Seat</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </form>
+
+        <div class="logic-explainer">
+          <div class="logic-item">
+            <span class="dot dot-confirmed"></span>
+            <div>
+              <strong>Seats 1–10 (Python List):</strong>
+              <p>First 10 valid bookings are confirmed and allocated the first available seat.</p>
+            </div>
+          </div>
+          <div class="logic-item">
+            <span class="dot dot-queue"></span>
+            <div>
+              <strong>11th Onward (FIFO deque):</strong>
+              <p>Enters the waiting queue. Never sent to waitlist when seats are vacant.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 10-Seat Availability Display (Section 5) -->
+      <section class="card panel-seats">
+        <div class="card-header">
+          <div>
+            <h3>Train Coach Layout (10 Seats)</h3>
+            <p>Chennai → Bangalore Express Coach S-1</p>
+          </div>
+          <div class="legend-pills">
+            <span class="legend-tag legend-avail"><i class="swatch swatch-green"></i> Available (Green)</span>
+            <span class="legend-tag legend-occ"><i class="swatch swatch-red"></i> Occupied (Red)</span>
+          </div>
+        </div>
+
+        <div class="coach-container">
+          <div class="coach-engine-tag">◀ ENGINE DIRECTION (FRONT)</div>
+          
+          <!-- 10 seats laid out in train aisle format (2 rows of 5) -->
+          <div class="train-coach-grid" id="seatGrid">
+            <!-- Rendered dynamically from Python Backend -->
+          </div>
+
+          <div class="coach-engine-tag">REAR CABIN (BACK) ▶</div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Confirmed Passenger List (Section 6) -->
+    <section class="card table-card">
+      <div class="card-header">
+        <div>
+          <h3>Confirmed Passengers</h3>
+          <p>Active ticket holders assigned to Seats 1–10</p>
+        </div>
+        <span class="badge-count-blue" id="confirmedBadge">0 / 10 Confirmed</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table" id="confirmedTable">
+          <thead>
+            <tr>
+              <th scope="col">Seat No.</th>
+              <th scope="col">Passenger ID</th>
+              <th scope="col">Passenger Name</th>
+              <th scope="col">Age</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="th-action">Action</th>
+            </tr>
+          </thead>
+          <tbody id="confirmedTableBody">
+            <!-- Injected by script from Python API -->
+          </tbody>
+        </table>
+      </div>
+      <div id="confirmedEmptyState" class="empty-state">
+        <div class="empty-icon">🪑</div>
+        <h4>No confirmed passengers</h4>
+        <p>Book a passenger above to allocate Seat 1 through Seat 10.</p>
+      </div>
+    </section>
+
+    <!-- FIFO Waiting Queue (Section 7) -->
+    <section class="card queue-card-panel">
+      <div class="card-header">
+        <div>
+          <h3>FIFO Waiting List Queue</h3>
+          <p>Python <code>collections.deque</code> — Earliest arrival gets priority</p>
+        </div>
+        <span class="badge-count-amber" id="queueBadge">0 in Queue</span>
+      </div>
+
+      <div class="queue-board" id="queueContainer">
+        <!-- Injected by script from Python API -->
+      </div>
+
+      <div id="queueEmptyState" class="empty-state">
+        <div class="empty-icon">⏱️</div>
+        <h4>Waiting queue is currently empty</h4>
+        <p>When all 10 seats are occupied, new passengers automatically join the FIFO queue.</p>
+      </div>
+    </section>
+
+    <!-- Viva & Academic Data Structures Reference Panel (Section 12) -->
+    <section class="card viva-card">
+      <div class="card-header">
+        <div>
+          <h3>M.Sc. Data Science Viva Reference: Data Structures & Algorithms</h3>
+          <p>Theoretical breakdown of Python data structures implemented in this system</p>
+        </div>
+        <span class="viva-pill">ACADEMIC VIVA</span>
+      </div>
+
+      <div class="viva-grid">
+        <div class="viva-col">
+          <div class="viva-head">
+            <span class="viva-num">01</span>
+            <h4>Python List (Array)</h4>
+          </div>
+          <p class="viva-desc">
+            Used for <code>self.seats = [None] * 10</code>. Represents fixed-capacity train seat slots.
+          </p>
+          <ul class="viva-points">
+            <li><strong>Allocation:</strong> Linear scan <code>O(n)</code> to find the lowest available seat slot.</li>
+            <li><strong>Index Access:</strong> Direct <code>O(1)</code> lookup using seat index.</li>
+            <li><strong>State Tracking:</strong> Index maps 1:1 to Coach Seats 1–10.</li>
+          </ul>
+        </div>
+
+        <div class="viva-col">
+          <div class="viva-head">
+            <span class="viva-num">02</span>
+            <h4>FIFO Queue (collections.deque)</h4>
+          </div>
+          <p class="viva-desc">
+            Used for <code>self.waiting_queue = deque()</code>. Manages waitlisted passengers.
+          </p>
+          <ul class="viva-points">
+            <li><strong>Enqueue:</strong> <code>waiting_queue.append()</code> adds to tail in <code>O(1)</code> time.</li>
+            <li><strong>Dequeue:</strong> <code>waiting_queue.popleft()</code> removes from head in <code>O(1)</code> time.</li>
+            <li><strong>Strict Fairness:</strong> Preserves arrival order; position 1 is always next.</li>
+          </ul>
+        </div>
+
+        <div class="viva-col">
+          <div class="viva-head">
+            <span class="viva-num">03</span>
+            <h4>Searching & Deletion</h4>
+          </div>
+          <p class="viva-desc">
+            Linear search algorithm by Passenger ID across confirmed array and waiting queue.
+          </p>
+          <ul class="viva-points">
+            <li><strong>Confirmed Search:</strong> <code>O(n)</code> search in 10-seat array.</li>
+            <li><strong>Waitlist Search:</strong> <code>O(k)</code> traversal across deque.</li>
+            <li><strong>Deletion:</strong> Seat set to <code>None</code> or element removed from deque.</li>
+          </ul>
+        </div>
+
+        <div class="viva-col">
+          <div class="viva-head">
+            <span class="viva-num">04</span>
+            <h4>Automatic FIFO Promotion</h4>
+          </div>
+          <p class="viva-desc">
+            Core business logic triggered immediately upon confirmed passenger cancellation.
+          </p>
+          <ul class="viva-points">
+            <li><strong>Seat Release:</strong> Cancelling passenger frees Seat <code>k</code>.</li>
+            <li><strong>Queue Check:</strong> If <code>len(waiting_queue) > 0</code>, <code>popleft()</code> fires.</li>
+            <li><strong>Seamless Reallocation:</strong> Released Seat <code>k</code> is immediately assigned to promoted passenger.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal: Cancel by Passenger ID (Section 9) -->
+  <div id="cancelModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="cancelModalTitle">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="cancelModalTitle">Cancel Ticket by Passenger ID</h3>
+        <button type="button" class="modal-close" id="closeCancelModalBtn" aria-label="Close modal">×</button>
+      </div>
+      <form id="cancelModalForm">
+        <p class="modal-sub">
+          Enter the Passenger ID (e.g. <code>P001</code>, <code>P004</code>, <code>P011</code>) to cancel their booking or remove them from the waiting queue.
+        </p>
+        <div class="form-group">
+          <label for="cancelPassengerId">Passenger ID <span class="required">*</span></label>
+          <input 
+            type="text" 
+            id="cancelPassengerId" 
+            placeholder="e.g. P002" 
+            maxlength="10" 
+            required 
+            autocomplete="off"
+          >
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancelModalDismissBtn">Dismiss</button>
+          <button type="submit" class="btn-danger" id="cancelModalSubmitBtn">Confirm Cancellation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: System Reset Confirmation (Section 10) -->
+  <div id="resetModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="resetModalTitle">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="resetModalTitle">Reset System?</h3>
+        <button type="button" class="modal-close" id="closeResetModalBtn" aria-label="Close modal">×</button>
+      </div>
+      <div class="modal-body">
+        <p>This action will permanently:</p>
+        <ul class="reset-impact-list">
+          <li>Clear all 10 confirmed passenger seats.</li>
+          <li>Clear the entire FIFO waiting queue.</li>
+          <li>Make all 10 seats Available (Green).</li>
+          <li>Reset Passenger ID counter back to <strong>P001</strong>.</li>
+        </ul>
+        <p class="reset-warning">Are you sure you want to proceed?</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="dismissResetBtn">Cancel</button>
+        <button type="button" class="btn-danger" id="confirmResetBtn">Yes, Reset All Data</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <p><strong>RailFlow</strong> — Train Seat Booking System · Academic Demonstration for M.Sc. Data Science</p>
+      <p class="footer-sub">Chennai ⇄ Bangalore Route (10 Seats Capacity) · Powered by Python Backend Engine & Vercel</p>
+    </div>
+  </footer>
+
+  <!-- Pass server-rendered initial data to frontend JavaScript -->
+  <script>
+    window.__INITIAL_STATE__ = {{ initial_data | tojson | safe }};
+  </script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
